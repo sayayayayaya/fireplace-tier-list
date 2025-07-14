@@ -1,1 +1,0 @@
-# Fireplace Tier List Creator

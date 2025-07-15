@@ -15,15 +15,15 @@ const TierRow = ({props}: {props: ITierRow}) => {
     return (
         <div id={`tier-row-${props.itr}`} >
             <div id={`tier-label-${props.itr}`}>{props.tierlabel}</div>
-            <div id={`tier-items-${props.itr}`}></div>
+            {/* should the images' ids be based on the character name? */}
+            <div id={`tier-items-${props.itr}`}>{props.items.map((item, index) => <img id={`row-${props.itr}-item-${index}`} src={`${item.itemPicturePath}`} />)}</div>
         </div>
     )
 }
 
 const pullLastSavedList: (() => ITierRow[]) = (() => {
-
     return [
-        {tierlabel: "S", itr: 1, items: []},
+        {tierlabel: "S", itr: 1, items: [{itemName: "raisu", itemPicturePath: "src/assets/images/a.jpg"}]},
         {tierlabel: "A", itr: 2, items: []},
         {tierlabel: "B", itr: 3, items: []},
         {tierlabel: "C", itr: 4, items: []},
@@ -36,8 +36,6 @@ const pullLastSavedList: (() => ITierRow[]) = (() => {
 function TierList () {
     const [currentTierList, updateCurrentTierList] = useState<ITierRow[]>(pullLastSavedList())
     
-    const [isShown, toggleElement] = useState<boolean>(true)
-
     return (
         <>
             {currentTierList.map((tier, index) => <TierRow props={{tierlabel: tier.tierlabel, itr: index, items: tier.items}} />)}

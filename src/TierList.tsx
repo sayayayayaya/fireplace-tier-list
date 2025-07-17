@@ -1,5 +1,6 @@
 import { useState } from "react"
 
+
 interface ITierRow {
     tierlabel: string,
     itr: number,
@@ -13,10 +14,10 @@ interface ITierItem {
 
 const TierRow = ({props}: {props: ITierRow}) => {
     return (
-        <div id={`tier-row-${props.itr}`} >
-            <div id={`tier-label-${props.itr}`}>{props.tierlabel}</div>
+        <div className="flex w-full" id={`tier-row-${props.itr}`} >
+            <div className="size-32 flex-none" id={`tier-label-${props.itr}`}>{props.tierlabel}</div>
             {/* should the images' ids be based on the character name? */}
-            <div id={`tier-items-${props.itr}`}>{props.items.map((item, index) => <img id={`row-${props.itr}-item-${index}`} src={`${item.itemPicturePath}`} />)}</div>
+            <div id={`tier-items-${props.itr}`} className="flex-1 flex">{props.items.map((item, index) => <img id={`row-${props.itr}-item-${index}`} src={`${item.itemPicturePath}`} className="size-32 object-contain flex-none"/>)}</div>
         </div>
     )
 }

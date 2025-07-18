@@ -1,17 +1,24 @@
 @import "tailwindcss";
 
 @theme {
-  
+  --color-back: #090C18;
+  --color-back-2: #01010A;
+  --color-gray: #2D2F39;
+}
+
+#root {
+  margin: 5rem auto 2rem auto;
+  text-align: center;
 }
 
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
-  font-weight: 400;
+  font-weight: 500;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  color: rgba(255, 255, 255, 0.90);
+  background-color: --color-back;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -31,9 +38,10 @@ a:hover {
 body {
   margin: 0;
   display: flex;
-  place-items: center;
+  /* place-items: center; */
   min-width: 320px;
-  min-height: 100vh;
+  /* min-height: 100vh; */
+  background-color: var(--color-back);
 }
 
 h1 {

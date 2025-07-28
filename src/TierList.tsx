@@ -1,68 +1,53 @@
-import { useState } from "react"
-import { DndContext, pointerWithin } from "@dnd-kit/core";
-import { useDroppable } from '@dnd-kit/core';
-import { arrayMove, horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
+import { useContext, useState } from "react"
+import { DndContext, pointerWithin } from "@dnd-kit/core"
+import { useDroppable } from '@dnd-kit/core'
+import { arrayMove, horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable"
+import UserSelect, { UserList } from "./UserSelect"
+import { UserSelectContext } from "./UserSelectContext"
 
+function TierList () {
+    interface ITierRowProps {
+        row: ITierRow,
+        list: ITierRow[]
+    }
 
-interface ITierRow {
-    tierlabel: string,
-    itr: number,
-    rowItems: ITierItem[]
-}
-
-interface ITierItem {
-    id: string,
-    itemPath: string,
-    itemLocation: number
-}
-
-interface ITierRowProps {
-    row: ITierRow,
-    list: ITierRow[]
-}
-
-const TierRow = ({props}: {props: ITierRowProps}) => {
-    const {setNodeRef} = useDroppable({
-        id: props.row.itr,
-        data: {
-            isTier: true
-        }
-    })
-    return (
-        <SortableContext items={props.list[props.row.itr].rowItems} strategy={horizontalListSortingStrategy}>
-            <div ref = {setNodeRef} className="flex w-full bg-back-2" id={`tier-row-${props.row.itr}`} >
-                <div className="min-w-24 min-h-24 flex-none flex items-center h-auto" id={`tier-label-${props.row.itr}`}><p className="mx-auto text-2xl">{props.row.tierlabel}</p></div>
-                <div id={`tier-items-${props.row.itr}`} className="border-l-2 border-gray flex-1 flex flex-wrap">
-                    {props.list[props.row.itr].rowItems.map((item) => <TierItem props={{id: item.id, itemPath: item.itemPath, itemLocation: props.row.itr}} />)}
+    const TierRow = ({props}: {props: ITierRowProps}) => {
+        const {setNodeRef} = useDroppable({
+            id: props.row.itr,
+            data: {
+                isTier: true
+            }
+        })
+        return (
+            <SortableContext items={props.list[props.row.itr].rowItems} strategy={horizontalListSortingStrategy}>
+                <div ref = {setNodeRef} className="flex w-full bg-back-2" id={`tier-row-${props.row.itr}`} >
+                    <div className="min-w-24 min-h-24 flex-none flex items-center h-auto" id={`tier-label-${props.row.itr}`}><p className="mx-auto text-2xl">{props.row.tierlabel}</p></div>
+                    <div id={`tier-items-${props.row.itr}`} className="border-l-2 border-gray flex-1 flex flex-wrap">
+                        {props.list[props.row.itr].rowItems.map((item) => <TierItem props={{id: item.id, itemPath: item.itemPath, itemLocation: props.row.itr}} />)}
+                    </div>
                 </div>
-            </div>
-        </SortableContext>
-    )
-}
+            </SortableContext>
+        )
+    }
 
-const TierItem = ({props}: {props: ITierItem}) => {
-    const {attributes, listeners, setNodeRef, transform} = useSortable({
-        id: props.id,
-        data: {
-            location: props.itemLocation,
-            isTier: false,
-            item: props
-        }
-    })
-    const style = transform ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`
-    } : undefined;
-    return(
-        <img id={`item-${props.id}`} src={`${props.itemPath}`} className="size-24 object-contain flex-none" ref={setNodeRef} style={style} {...listeners} {...attributes}/>
-    )
-}
+    const TierItem = ({props}: {props: ITierItem}) => {
+        const {attributes, listeners, setNodeRef, transform} = useSortable({
+            id: props.id,
+            data: {
+                location: props.itemLocation,
+                isTier: false,
+                item: props
+            }
+        })
+        const style = transform ? {
+            transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`
+        } : undefined;
+        return(
+            <img id={`item-${props.id}`} src={`${props.itemPath}`} className="size-24 object-contain flex-none" ref={setNodeRef} style={style} {...listeners} {...attributes}/>
+        )
+    }
 
-const raisu: ITierItem = {id: "raisu", itemPath: "src/assets/images/a.jpg", itemLocation: 7}
-const hard: ITierItem = {id: "gorila", itemPath: "src/assets/images/hard.png", itemLocation: 7}
-const gigaraisu: ITierItem[] = [raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu]
-
-const pullLastSavedList: (() => ITierRow[]) = (() => {
-    return [
+    const [currentTierList, updateCurrentTierList] = useState<ITierRow[]>([ 
         {tierlabel: "S", itr: 0, rowItems: []},
         {tierlabel: "A", itr: 1, rowItems: []},
         {tierlabel: "B", itr: 2, rowItems: []},
@@ -70,29 +55,63 @@ const pullLastSavedList: (() => ITierRow[]) = (() => {
         {tierlabel: "D", itr: 4, rowItems: []},
         {tierlabel: "E", itr: 5, rowItems: []},
         {tierlabel: "F", itr: 6, rowItems: []},
-        {tierlabel: "unsorted", itr: 7, rowItems: [raisu, hard]}
-    ]
-})
-
-function TierList () {
-    const [currentTierList, updateCurrentTierList] = useState<ITierRow[]>(pullLastSavedList())
+        {tierlabel: "unsorted", itr: 7, rowItems: []}
+    ])
+    
     const workingList = currentTierList
+
+    const userSelectContext = useContext(UserSelectContext)
+    const [userContext, setUserContext] = useState({list: UserList, listener: updateList})
     
     return (
-        <DndContext onDragEnd={handleDragEnd} onDragOver={handleDragOver} collisionDetection={pointerWithin}>
-            <div className="border-2 border-gray divide-y-2 divide-gray w-6xl mb-8">
-                {currentTierList.map((tier, index) => {
-                    if (index > 6) return
-                    return <TierRow props={{row: tier, list: currentTierList}} />
-                })}
-            </div>
-            <div className="flex flex-wrap flex-none w-6xl">
-                <SortableContext items={currentTierList[7].rowItems} strategy={horizontalListSortingStrategy}>
-                    {currentTierList && currentTierList[7].rowItems.map((item) => <TierItem props={{id: item.id, itemPath: item.itemPath, itemLocation: 7}} />)}
-                </SortableContext>
-            </div>
-        </DndContext>
+        <>
+            <UserSelectContext value={userContext}>
+                <UserSelect />
+                {(userContext.list.currentUserID > 0 && currentTierList) ? 
+                    <DndContext onDragEnd={handleDragEnd} onDragOver={handleDragOver} collisionDetection={pointerWithin}>
+                        <div className="border-2 border-gray divide-y-2 divide-gray w-6xl mb-8">
+                            {currentTierList.map((tier, index) => {
+                                if (index > 6) return
+                                return <TierRow props={{row: tier, list: currentTierList}} />
+                            })}
+                        </div>
+                        <div className="flex flex-wrap flex-none w-6xl">
+                            <SortableContext items={currentTierList[7].rowItems} strategy={horizontalListSortingStrategy}>
+                                {currentTierList && currentTierList[7].rowItems.map((item) => <TierItem props={{id: item.id, itemPath: item.itemPath, itemLocation: 7}} />)}
+                            </SortableContext>
+                        </div>
+                    </DndContext> 
+                : null}
+            </UserSelectContext>
+        </>
     )
+
+    function updateList(userID: number) {
+        //Pull list by userID
+        console.log(userID)
+        console.log(userContext.list.currentUserID)
+        console.log(currentTierList)
+
+        if (userID > 0) {
+            const raisu: ITierItem = {id: "raisu", itemPath: "src/assets/images/a.jpg", itemLocation: 7}
+            const hard: ITierItem = {id: "gorila", itemPath: "src/assets/images/hard.png", itemLocation: 7}
+            const gigaraisu: ITierItem[] = [raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu]
+            updateCurrentTierList(currentList => [ {tierlabel: "S", itr: 0, rowItems: userID == 1 ? gigaraisu : []},
+                {tierlabel: "A", itr: 1, rowItems: []},
+                {tierlabel: "B", itr: 2, rowItems: []},
+                {tierlabel: "C", itr: 3, rowItems: []},
+                {tierlabel: "D", itr: 4, rowItems: []},
+                {tierlabel: "E", itr: 5, rowItems: []},
+                {tierlabel: "F", itr: 6, rowItems: []},
+                {tierlabel: "unsorted", itr: 7, rowItems: [raisu, hard]}
+            ])
+            const newUserContext = userContext
+            newUserContext.list.currentUserID = userID
+            setUserContext(newUserContext)
+            console.log("updated")
+            console.log(currentTierList)
+        }
+    }
 
     function handleDragOver(event) {
         const {active, over} = event

@@ -1,6 +1,7 @@
 import { useState } from "react"
-import { DndContext } from "@dnd-kit/core";
-import {useDroppable, useDraggable} from '@dnd-kit/core';
+import { DndContext, pointerWithin } from "@dnd-kit/core";
+import { useDroppable } from '@dnd-kit/core';
+import { arrayMove, horizontalListSortingStrategy, SortableContext, useSortable } from "@dnd-kit/sortable";
 
 
 interface ITierRow {
@@ -10,7 +11,7 @@ interface ITierRow {
 }
 
 interface ITierItem {
-    itemName: string,
+    id: string,
     itemPath: string,
     itemLocation: number
 }
@@ -22,35 +23,42 @@ interface ITierRowProps {
 
 const TierRow = ({props}: {props: ITierRowProps}) => {
     const {setNodeRef} = useDroppable({
-        id: props.row.itr
+        id: props.row.itr,
+        data: {
+            isTier: true
+        }
     })
     return (
-        <div className="flex w-full bg-back-2" id={`tier-row-${props.row.itr}`} >
-            <div className="min-w-24 min-h-24 flex-none flex items-center h-auto" id={`tier-label-${props.row.itr}`}><p className="mx-auto text-2xl">{props.row.tierlabel}</p></div>
-            <div ref={setNodeRef} id={`tier-items-${props.row.itr}`} className="border-l-2 border-gray flex-1 flex flex-wrap">
-                {props.list[props.row.itr].rowItems.map((item) => <TierItem props={{itemName: item.itemName, itemPath: item.itemPath, itemLocation: props.row.itr}} />)}
+        <SortableContext items={props.list[props.row.itr].rowItems} strategy={horizontalListSortingStrategy}>
+            <div ref = {setNodeRef} className="flex w-full bg-back-2" id={`tier-row-${props.row.itr}`} >
+                <div className="min-w-24 min-h-24 flex-none flex items-center h-auto" id={`tier-label-${props.row.itr}`}><p className="mx-auto text-2xl">{props.row.tierlabel}</p></div>
+                <div id={`tier-items-${props.row.itr}`} className="border-l-2 border-gray flex-1 flex flex-wrap">
+                    {props.list[props.row.itr].rowItems.map((item) => <TierItem props={{id: item.id, itemPath: item.itemPath, itemLocation: props.row.itr}} />)}
+                </div>
             </div>
-        </div>
+        </SortableContext>
     )
 }
 
 const TierItem = ({props}: {props: ITierItem}) => {
-    const {attributes, listeners, setNodeRef, transform} = useDraggable({
-        id: props.itemName,
+    const {attributes, listeners, setNodeRef, transform} = useSortable({
+        id: props.id,
         data: {
-            location: props.itemLocation
+            location: props.itemLocation,
+            isTier: false,
+            item: props
         }
     })
     const style = transform ? {
         transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`
     } : undefined;
     return(
-        <img id={`item-${props.itemName}`} src={`${props.itemPath}`} className="size-24 object-contain flex-none" ref={setNodeRef} style={style} {...listeners} {...attributes}/>
+        <img id={`item-${props.id}`} src={`${props.itemPath}`} className="size-24 object-contain flex-none" ref={setNodeRef} style={style} {...listeners} {...attributes}/>
     )
 }
 
-let raisu: ITierItem = {itemName: "raisu", itemPath: "src/assets/images/a.jpg", itemLocation: 7}
-let hard: ITierItem = {itemName: "gorila", itemPath: "src/assets/images/hard.png", itemLocation: 7}
+const raisu: ITierItem = {id: "raisu", itemPath: "src/assets/images/a.jpg", itemLocation: 7}
+const hard: ITierItem = {id: "gorila", itemPath: "src/assets/images/hard.png", itemLocation: 7}
 const gigaraisu: ITierItem[] = [raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu, raisu]
 
 const pullLastSavedList: (() => ITierRow[]) = (() => {
@@ -66,18 +74,12 @@ const pullLastSavedList: (() => ITierRow[]) = (() => {
     ]
 })
 
-// let characters: ITierItem[] = [
-//     raisu, hard
-// ]
-
-    
-
 function TierList () {
     const [currentTierList, updateCurrentTierList] = useState<ITierRow[]>(pullLastSavedList())
-    // const [currentTierList, updateCurrentTierList] = useState<ITierRow[]>(currentList)
+    const workingList = currentTierList
     
     return (
-        <DndContext onDragEnd={handleDragEnd}>
+        <DndContext onDragEnd={handleDragEnd} onDragOver={handleDragOver} collisionDetection={pointerWithin}>
             <div className="border-2 border-gray divide-y-2 divide-gray w-6xl mb-8">
                 {currentTierList.map((tier, index) => {
                     if (index > 6) return
@@ -85,20 +87,37 @@ function TierList () {
                 })}
             </div>
             <div className="flex flex-wrap flex-none w-6xl">
-                {currentTierList && currentTierList[7].rowItems.map((item) => <TierItem props={{itemName: item.itemName, itemPath: item.itemPath, itemLocation: 7}} />)}
+                <SortableContext items={currentTierList[7].rowItems} strategy={horizontalListSortingStrategy}>
+                    {currentTierList && currentTierList[7].rowItems.map((item) => <TierItem props={{id: item.id, itemPath: item.itemPath, itemLocation: 7}} />)}
+                </SortableContext>
             </div>
         </DndContext>
     )
 
+    function handleDragOver(event) {
+        const {active, over} = event
+        let overLocation = 7
+        if (over != null) {
+            overLocation = over.data.current.isTier ? over.id : over.data.current.location
+        }
+        const activeLocation = active.data.current.location
+        if (overLocation == activeLocation) return
+
+        workingList[overLocation].rowItems.push(currentTierList[activeLocation].rowItems.splice(currentTierList[activeLocation].rowItems.findIndex(item => item.id == active.id), 1)[0])
+        active.data.current.location = overLocation
+        updateCurrentTierList(currentList => [...workingList])
+    }
+
     function handleDragEnd(event) {
         const {active, over} = event
-        console.log(event, currentTierList)
+        if (over == null || active.id == over.id) return
 
-        let newList = currentTierList
+        const currentRow = workingList[active.data.current.location].rowItems
+        const oldIndex = currentRow.findIndex(item => item.id == active.data.current.item.id)
+        const newIndex = over.data.current.isTier ? currentRow.length : currentRow.findIndex(item => item.id == over.data.current.item.id)
 
-        newList[over ? over.id : 7].rowItems.push(currentTierList[active.data.current.location].rowItems.splice(currentTierList[active.data.current.location].rowItems.findIndex(item => item.itemName == active.id), 1)[0])
-        updateCurrentTierList(currentList => [...newList])
-
+        workingList[active.data.current.location].rowItems = arrayMove(currentRow, oldIndex, newIndex)
+        updateCurrentTierList(currentList => [...workingList])
     }
 }
 
